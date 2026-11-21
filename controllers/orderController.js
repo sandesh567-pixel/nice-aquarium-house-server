@@ -4,7 +4,7 @@ import Product from '../models/Product.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { sendNewOrderEmail, sendOrderStatusEmail } from '../services/emailService.js'
 
-const DELIVERY_CHARGES = { standard: 100, express: 200 } // NPR — configurable here, not hard-coded in the frontend
+const DELIVERY_CHARGES = { standard: 0, express: 0 }
 
 function generateOrderNumber() {
   return `AQ-${Math.floor(10000 + Math.random() * 89999)}`
@@ -75,7 +75,7 @@ export const createOrder = asyncHandler(async (req, res) => {
   // Fire-and-forget: the order is already durable in MongoDB at this
   // point (the transaction committed above). Email is a notification,
   // not part of the order's success path — it's never awaited here, so
-  // SMTP latency or failure can never delay or break this response.
+  // email latency or failure can never delay or break this response.
   sendNewOrderEmail(order).catch((err) => console.error('[email] Failed to send new-order email:', err.message))
 
   res.status(201).json({ order })
@@ -114,7 +114,7 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
 
   const previousStatus = order.status
   order.status = status
-  await order.save() // schema validation (the same status enum) still runs on save, same as runValidators did before
+  await order.save() // schema validation (the same status enum) still runs on save
 
   res.json({ order })
 
